@@ -1,0 +1,16 @@
+{
+  "name": "@lms/api",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.104.5",
+    "openapi-fetch": "^0.17.0",
+    "openapi-react-query": "^0.5.4"
+  }
+}

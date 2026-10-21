@@ -1,0 +1,1545 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Leave Management API",
+    "description": "Multi-tenant leave management. Authenticate with an access token from the tenant user pool (`Authorization: Bearer <token>`); the tenant is taken from the token's `tenant_id` claim. Errors are `application/problem+json` with a stable `errorCode` (see the `ProblemDetail` schema).",
+    "version": "v1"
+  },
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "/platform/tenants": {
+      "get": {
+        "tags": [
+          "platform-tenant-controller"
+        ],
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Zero-based page index (0..N)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "The size of the page to be returned",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "default": [
+                "createdAt,DESC"
+              ],
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseTenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: `VALIDATION_FAILED` lists the fields in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or invalid access token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed, or the tenant is unknown or suspended",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state (e.g. overlapping leave, insufficient balance)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Breaks a business rule; `violations` lists every rule broken",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The tenant is temporarily unavailable (e.g. its schema is being migrated)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "platform-tenant-controller"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: `VALIDATION_FAILED` lists the fields in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or invalid access token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed, or the tenant is unknown or suspended",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state (e.g. overlapping leave, insufficient balance)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Breaks a business rule; `violations` lists every rule broken",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The tenant is temporarily unavailable (e.g. its schema is being migrated)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/tenants/{tenantId}/suspend": {
+      "post": {
+        "tags": [
+          "platform-tenant-controller"
+        ],
+        "operationId": "suspend",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: `VALIDATION_FAILED` lists the fields in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or invalid access token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed, or the tenant is unknown or suspended",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state (e.g. overlapping leave, insufficient balance)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Breaks a business rule; `violations` lists every rule broken",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The tenant is temporarily unavailable (e.g. its schema is being migrated)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/tenants/{tenantId}/migrate": {
+      "post": {
+        "tags": [
+          "platform-tenant-controller"
+        ],
+        "operationId": "migrate",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: `VALIDATION_FAILED` lists the fields in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or invalid access token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed, or the tenant is unknown or suspended",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state (e.g. overlapping leave, insufficient balance)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Breaks a business rule; `violations` lists every rule broken",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The tenant is temporarily unavailable (e.g. its schema is being migrated)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/tenants/{tenantId}/admins": {
+      "post": {
+        "tags": [
+          "platform-tenant-controller"
+        ],
+        "operationId": "addAdmin",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTenantAdminRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: `VALIDATION_FAILED` lists the fields in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or invalid access token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed, or the tenant is unknown or suspended",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state (e.g. overlapping leave, insufficient balance)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Breaks a business rule; `violations` lists every rule broken",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The tenant is temporarily unavailable (e.g. its schema is being migrated)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/tenants/{tenantId}/activate": {
+      "post": {
+        "tags": [
+          "platform-tenant-controller"
+        ],
+        "operationId": "activate",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: `VALIDATION_FAILED` lists the fields in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or invalid access token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed, or the tenant is unknown or suspended",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state (e.g. overlapping leave, insufficient balance)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Breaks a business rule; `violations` lists every rule broken",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The tenant is temporarily unavailable (e.g. its schema is being migrated)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/tenants/{tenantId}": {
+      "get": {
+        "tags": [
+          "platform-tenant-controller"
+        ],
+        "operationId": "get",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: `VALIDATION_FAILED` lists the fields in `errors`",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or invalid access token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed, or the tenant is unknown or suspended",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state (e.g. overlapping leave, insufficient balance)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Breaks a business rule; `violations` lists every rule broken",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The tenant is temporarily unavailable (e.g. its schema is being migrated)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateTenantRequest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9-]{1,38}[a-z0-9]$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "subdomain": {
+            "type": "string",
+            "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+          },
+          "defaultTimezone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "adminEmail": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "adminEmail",
+          "defaultTimezone",
+          "key",
+          "name"
+        ]
+      },
+      "TenantResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "schemaName": {
+            "type": "string"
+          },
+          "subdomain": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PROVISIONING",
+              "ACTIVE",
+              "SUSPENDED",
+              "DEACTIVATED"
+            ]
+          },
+          "migrationState": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "UP_TO_DATE",
+              "FAILED"
+            ]
+          },
+          "migratedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "migrationError": {
+            "type": "string"
+          },
+          "defaultTimezone": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AddTenantAdminRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "PageResponseTenantResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProblemDetail": {
+        "type": "object",
+        "description": "RFC 9457 problem details. `x-error-codes` gives each code's HTTP status.",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable; safe to show to the user"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string",
+            "description": "Stable, machine-readable error code",
+            "enum": [
+              "ACCESS_DENIED",
+              "ALREADY_HELD",
+              "APPROVAL_ALREADY_PENDING",
+              "ATTACHMENT_NOT_FOUND",
+              "ATTACHMENT_NOT_UPLOADED",
+              "ATTACHMENT_REQUIRED",
+              "BACKDATING_NOT_ALLOWED",
+              "BAD_REQUEST",
+              "BALANCE_NOT_FOUND",
+              "BEFORE_JOINING",
+              "CANNOT_DISABLE_SELF",
+              "COMMENT_REQUIRED",
+              "CONCURRENT_UPDATE",
+              "CONFLICT",
+              "CROSSES_LEAVE_PERIOD",
+              "DEFAULT_WORKFLOW_FIXED",
+              "DEFAULT_WORK_SCHEDULE_REQUIRED",
+              "DEPARTMENT_CODE_TAKEN",
+              "DEPARTMENT_CYCLE",
+              "DEPARTMENT_NOT_FOUND",
+              "DEPARTMENT_NOT_VISIBLE",
+              "DESIGNATION_NAME_TAKEN",
+              "DESIGNATION_NOT_FOUND",
+              "EMAIL_LINKED_TO_OTHER_EMPLOYEE",
+              "EMAIL_REGISTERED_ELSEWHERE",
+              "EMPLOYEE_CODE_TAKEN",
+              "EMPLOYEE_EMAIL_TAKEN",
+              "EMPLOYEE_EXITED",
+              "EMPLOYEE_HAS_REPORTS",
+              "EMPLOYEE_NOT_FOUND",
+              "EMPLOYEE_NOT_VISIBLE",
+              "EXPORT_NOT_FOUND",
+              "EXPORT_NOT_READY",
+              "EXPORT_TOO_LARGE",
+              "HALF_DAY_NOT_ALLOWED",
+              "HOLIDAY_ALREADY_EXISTS",
+              "HOLIDAY_NOT_FOUND",
+              "INSUFFICIENT_BALANCE",
+              "INSUFFICIENT_NOTICE",
+              "INTERNAL_ERROR",
+              "INVALID_AMOUNT",
+              "INVALID_DATES",
+              "INVALID_DATE_RANGE",
+              "INVALID_EFFECTIVE_DATES",
+              "INVALID_EMPLOYMENT_STATUS",
+              "INVALID_HOLIDAY_IMPORT",
+              "INVALID_LEAVE_PERIOD",
+              "INVALID_RANGE",
+              "INVALID_SCOPE",
+              "INVALID_SESSIONS",
+              "INVALID_STATUS_TRANSITION",
+              "INVALID_TENANT_STATE",
+              "INVALID_TIMEZONE",
+              "INVALID_WORKFLOW",
+              "LAST_TENANT_ADMIN",
+              "LEAVE_PERIOD_CLOSED",
+              "LEAVE_PERIOD_NAME_TAKEN",
+              "LEAVE_PERIOD_NOT_FOUND",
+              "LEAVE_PERIOD_OVERLAP",
+              "LEAVE_POLICY_NAME_TAKEN",
+              "LEAVE_POLICY_NOT_FOUND",
+              "LEAVE_REQUEST_NOT_FOUND",
+              "LEAVE_TYPE_CODE_TAKEN",
+              "LEAVE_TYPE_INACTIVE",
+              "LEAVE_TYPE_NAME_TAKEN",
+              "LEAVE_TYPE_NOT_FOUND",
+              "LEAVE_TYPE_NOT_TRACKED",
+              "LOCATION_CODE_TAKEN",
+              "LOCATION_NOT_FOUND",
+              "MAX_CONSECUTIVE_DAYS_EXCEEDED",
+              "METHOD_NOT_ALLOWED",
+              "NOTIFICATION_NOT_FOUND",
+              "NOT_ALLOWED_DURING_PROBATION",
+              "NOT_ASSIGNED",
+              "NOT_A_USER",
+              "NOT_ELIGIBLE",
+              "NOT_FOUND",
+              "NOT_LINKED_TO_EMPLOYEE",
+              "NOT_REQUESTER",
+              "NO_LEAVE_PERIOD",
+              "NO_WORKING_DAYS",
+              "OVERLAPPING_LEAVE",
+              "POLICY_CONFLICT",
+              "POLICY_LEAVE_TYPE_IMMUTABLE",
+              "PRIVILEGE_ESCALATION",
+              "REPORTING_CYCLE",
+              "ROLE_CODE_TAKEN",
+              "ROLE_IN_USE",
+              "ROLE_NOT_FOUND",
+              "SUBDOMAIN_TAKEN",
+              "SYSTEM_ROLE_READ_ONLY",
+              "TASK_NOT_FOUND",
+              "TASK_NOT_PENDING",
+              "TENANT_ADMIN_SETUP_FAILED",
+              "TENANT_KEY_TAKEN",
+              "TENANT_MIGRATION_FAILED",
+              "TENANT_NOT_FOUND",
+              "TENANT_NOT_SERVING",
+              "TENANT_SUSPENDED",
+              "TENANT_UNAVAILABLE",
+              "UNAUTHENTICATED",
+              "UNKNOWN_ORG_UNIT",
+              "UNKNOWN_PERMISSION",
+              "UNKNOWN_ROLE",
+              "UNSUPPORTED_ATTACHMENT",
+              "UNSUPPORTED_DATE_FORMAT",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "USER_ALREADY_EXISTS",
+              "USER_NOT_FOUND",
+              "USER_NOT_REGISTERED",
+              "VALIDATION_FAILED",
+              "WORKFLOW_NAME_TAKEN",
+              "WORKFLOW_NOT_FOUND",
+              "WORKFLOW_PRIORITY_TAKEN",
+              "WORK_SCHEDULE_NAME_TAKEN",
+              "WORK_SCHEDULE_NOT_FOUND"
+            ]
+          },
+          "errors": {
+            "type": "array",
+            "description": "For VALIDATION_FAILED",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "violations": {
+            "type": "array",
+            "description": "For leave rule violations: every rule the request breaks",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "x-error-codes": [
+          {
+            "code": "ACCESS_DENIED",
+            "status": 403
+          },
+          {
+            "code": "ALREADY_HELD",
+            "status": 409
+          },
+          {
+            "code": "APPROVAL_ALREADY_PENDING",
+            "status": 409
+          },
+          {
+            "code": "ATTACHMENT_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "ATTACHMENT_NOT_UPLOADED",
+            "status": 422
+          },
+          {
+            "code": "ATTACHMENT_REQUIRED",
+            "status": 422
+          },
+          {
+            "code": "BACKDATING_NOT_ALLOWED",
+            "status": 422
+          },
+          {
+            "code": "BAD_REQUEST",
+            "status": 400
+          },
+          {
+            "code": "BALANCE_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "BEFORE_JOINING",
+            "status": 422
+          },
+          {
+            "code": "CANNOT_DISABLE_SELF",
+            "status": 409
+          },
+          {
+            "code": "COMMENT_REQUIRED",
+            "status": 400
+          },
+          {
+            "code": "CONCURRENT_UPDATE",
+            "status": 409
+          },
+          {
+            "code": "CONFLICT",
+            "status": 409
+          },
+          {
+            "code": "CROSSES_LEAVE_PERIOD",
+            "status": 422
+          },
+          {
+            "code": "DEFAULT_WORKFLOW_FIXED",
+            "status": 409
+          },
+          {
+            "code": "DEFAULT_WORK_SCHEDULE_REQUIRED",
+            "status": 409
+          },
+          {
+            "code": "DEPARTMENT_CODE_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "DEPARTMENT_CYCLE",
+            "status": 409
+          },
+          {
+            "code": "DEPARTMENT_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "DEPARTMENT_NOT_VISIBLE",
+            "status": 403
+          },
+          {
+            "code": "DESIGNATION_NAME_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "DESIGNATION_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "EMAIL_LINKED_TO_OTHER_EMPLOYEE",
+            "status": 409
+          },
+          {
+            "code": "EMAIL_REGISTERED_ELSEWHERE",
+            "status": 409
+          },
+          {
+            "code": "EMPLOYEE_CODE_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "EMPLOYEE_EMAIL_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "EMPLOYEE_EXITED",
+            "status": 422
+          },
+          {
+            "code": "EMPLOYEE_HAS_REPORTS",
+            "status": 409
+          },
+          {
+            "code": "EMPLOYEE_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "EMPLOYEE_NOT_VISIBLE",
+            "status": 403
+          },
+          {
+            "code": "EXPORT_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "EXPORT_NOT_READY",
+            "status": 409
+          },
+          {
+            "code": "EXPORT_TOO_LARGE",
+            "status": 422
+          },
+          {
+            "code": "HALF_DAY_NOT_ALLOWED",
+            "status": 422
+          },
+          {
+            "code": "HOLIDAY_ALREADY_EXISTS",
+            "status": 409
+          },
+          {
+            "code": "HOLIDAY_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "INSUFFICIENT_BALANCE",
+            "status": 409
+          },
+          {
+            "code": "INSUFFICIENT_NOTICE",
+            "status": 422
+          },
+          {
+            "code": "INTERNAL_ERROR",
+            "status": 500
+          },
+          {
+            "code": "INVALID_AMOUNT",
+            "status": 400
+          },
+          {
+            "code": "INVALID_DATES",
+            "status": 400
+          },
+          {
+            "code": "INVALID_DATE_RANGE",
+            "status": 400
+          },
+          {
+            "code": "INVALID_EFFECTIVE_DATES",
+            "status": 400
+          },
+          {
+            "code": "INVALID_EMPLOYMENT_STATUS",
+            "status": 400
+          },
+          {
+            "code": "INVALID_HOLIDAY_IMPORT",
+            "status": 400
+          },
+          {
+            "code": "INVALID_LEAVE_PERIOD",
+            "status": 400
+          },
+          {
+            "code": "INVALID_RANGE",
+            "status": 400
+          },
+          {
+            "code": "INVALID_SCOPE",
+            "status": 400
+          },
+          {
+            "code": "INVALID_SESSIONS",
+            "status": 400
+          },
+          {
+            "code": "INVALID_STATUS_TRANSITION",
+            "status": 409
+          },
+          {
+            "code": "INVALID_TENANT_STATE",
+            "status": 409
+          },
+          {
+            "code": "INVALID_TIMEZONE",
+            "status": 400
+          },
+          {
+            "code": "INVALID_WORKFLOW",
+            "status": 400
+          },
+          {
+            "code": "LAST_TENANT_ADMIN",
+            "status": 409
+          },
+          {
+            "code": "LEAVE_PERIOD_CLOSED",
+            "status": 409
+          },
+          {
+            "code": "LEAVE_PERIOD_NAME_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "LEAVE_PERIOD_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "LEAVE_PERIOD_OVERLAP",
+            "status": 409
+          },
+          {
+            "code": "LEAVE_POLICY_NAME_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "LEAVE_POLICY_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "LEAVE_REQUEST_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "LEAVE_TYPE_CODE_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "LEAVE_TYPE_INACTIVE",
+            "status": 422
+          },
+          {
+            "code": "LEAVE_TYPE_NAME_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "LEAVE_TYPE_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "LEAVE_TYPE_NOT_TRACKED",
+            "status": 409
+          },
+          {
+            "code": "LOCATION_CODE_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "LOCATION_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "MAX_CONSECUTIVE_DAYS_EXCEEDED",
+            "status": 422
+          },
+          {
+            "code": "METHOD_NOT_ALLOWED",
+            "status": 405
+          },
+          {
+            "code": "NOTIFICATION_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "NOT_ALLOWED_DURING_PROBATION",
+            "status": 422
+          },
+          {
+            "code": "NOT_ASSIGNED",
+            "status": 403
+          },
+          {
+            "code": "NOT_A_USER",
+            "status": 403
+          },
+          {
+            "code": "NOT_ELIGIBLE",
+            "status": 409
+          },
+          {
+            "code": "NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "NOT_LINKED_TO_EMPLOYEE",
+            "status": 403
+          },
+          {
+            "code": "NOT_REQUESTER",
+            "status": 403
+          },
+          {
+            "code": "NO_LEAVE_PERIOD",
+            "status": 409
+          },
+          {
+            "code": "NO_WORKING_DAYS",
+            "status": 422
+          },
+          {
+            "code": "OVERLAPPING_LEAVE",
+            "status": 409
+          },
+          {
+            "code": "POLICY_CONFLICT",
+            "status": 409
+          },
+          {
+            "code": "POLICY_LEAVE_TYPE_IMMUTABLE",
+            "status": 409
+          },
+          {
+            "code": "PRIVILEGE_ESCALATION",
+            "status": 403
+          },
+          {
+            "code": "REPORTING_CYCLE",
+            "status": 409
+          },
+          {
+            "code": "ROLE_CODE_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "ROLE_IN_USE",
+            "status": 409
+          },
+          {
+            "code": "ROLE_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "SUBDOMAIN_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "SYSTEM_ROLE_READ_ONLY",
+            "status": 409
+          },
+          {
+            "code": "TASK_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "TASK_NOT_PENDING",
+            "status": 409
+          },
+          {
+            "code": "TENANT_ADMIN_SETUP_FAILED",
+            "status": 500
+          },
+          {
+            "code": "TENANT_KEY_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "TENANT_MIGRATION_FAILED",
+            "status": 500
+          },
+          {
+            "code": "TENANT_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "TENANT_NOT_SERVING",
+            "status": 409
+          },
+          {
+            "code": "TENANT_SUSPENDED",
+            "status": 403
+          },
+          {
+            "code": "TENANT_UNAVAILABLE",
+            "status": 503
+          },
+          {
+            "code": "UNAUTHENTICATED",
+            "status": 401
+          },
+          {
+            "code": "UNKNOWN_ORG_UNIT",
+            "status": 400
+          },
+          {
+            "code": "UNKNOWN_PERMISSION",
+            "status": 400
+          },
+          {
+            "code": "UNKNOWN_ROLE",
+            "status": 400
+          },
+          {
+            "code": "UNSUPPORTED_ATTACHMENT",
+            "status": 400
+          },
+          {
+            "code": "UNSUPPORTED_DATE_FORMAT",
+            "status": 400
+          },
+          {
+            "code": "UNSUPPORTED_MEDIA_TYPE",
+            "status": 415
+          },
+          {
+            "code": "USER_ALREADY_EXISTS",
+            "status": 409
+          },
+          {
+            "code": "USER_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "USER_NOT_REGISTERED",
+            "status": 403
+          },
+          {
+            "code": "VALIDATION_FAILED",
+            "status": 400
+          },
+          {
+            "code": "WORKFLOW_NAME_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "WORKFLOW_NOT_FOUND",
+            "status": 404
+          },
+          {
+            "code": "WORKFLOW_PRIORITY_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "WORK_SCHEDULE_NAME_TAKEN",
+            "status": 409
+          },
+          {
+            "code": "WORK_SCHEDULE_NOT_FOUND",
+            "status": 404
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": ["*.ts", "apps/*/vite.config.ts"],
+  "compilerOptions": {
+    "types": ["node", "@testing-library/jest-dom/vitest"]
+  }
+}
