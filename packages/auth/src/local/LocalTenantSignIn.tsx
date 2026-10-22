@@ -115,6 +115,7 @@ export function LocalTenantSignIn({ localApi, portalName }: { localApi: LocalAut
                 <Button
                   size="xs"
                   variant="light"
+                  aria-label={`Sign in as ${user.email}`}
                   onClick={() => signInAs.mutate(user)}
                   loading={signInAs.isPending && signInAs.variables?.id === user.id}
                   disabled={signInAs.isPending}

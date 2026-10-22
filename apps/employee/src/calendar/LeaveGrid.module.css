@@ -1,0 +1,142 @@
+.scroller {
+  --off-day: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+  overflow-x: auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) repeat(var(--days), minmax(28px, 1fr));
+  min-width: calc(160px + var(--days) * 28px);
+}
+
+.corner,
+.name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  /* The card's own background, so the sticky column hides what scrolls under it */
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  border-right: 1px solid var(--mantine-color-default-border);
+}
+
+.corner {
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 8px;
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 8px;
+  height: 38px;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.day {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 0;
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.2;
+  color: var(--mantine-color-dimmed);
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  cursor: pointer;
+}
+
+.day:hover {
+  background: var(--mantine-color-default-hover);
+}
+
+.day:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+
+.day[data-today] {
+  color: var(--mantine-primary-color-filled);
+  font-weight: 700;
+}
+
+.dayNumber {
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-text);
+}
+
+.day[data-today] .dayNumber {
+  color: inherit;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 38px;
+  padding: 0 1px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.day[data-off],
+.cell[data-off] {
+  background: var(--off-day);
+}
+
+.day[data-holiday],
+.cell[data-holiday] {
+  background: var(--mantine-color-grape-light);
+}
+
+.bar {
+  display: block;
+  flex: 1 1 0;
+  height: 24px;
+  border-radius: 4px;
+}
+
+/* A half day fills its half of the cell: mornings on the left, afternoons on the right */
+.bar[data-session='FIRST_HALF'] {
+  flex: 0 0 calc(50% - 1px);
+  margin-right: auto;
+}
+
+.bar[data-session='SECOND_HALF'] {
+  flex: 0 0 calc(50% - 1px);
+  margin-left: auto;
+}
+
+.bar[data-pending],
+.swatch[data-pending] {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    light-dark(rgba(255, 255, 255, 0.6), rgba(0, 0, 0, 0.45)) 4px 8px
+  );
+}
+
+a.bar:focus-visible {
+  outline: 2px solid var(--mantine-color-text);
+  outline-offset: 1px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Phones: a narrower name column leaves room for more days before scrolling */
+@media (max-width: 36em) {
+  .grid {
+    grid-template-columns: 112px repeat(var(--days), minmax(28px, 1fr));
+    min-width: calc(112px + var(--days) * 28px);
+  }
+}

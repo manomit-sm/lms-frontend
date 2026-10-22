@@ -18,11 +18,14 @@ import type { ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { activeNavItem } from './activeNavItem';
 import { initials } from './initials';
+import classes from './PortalShell.module.css';
 
 export interface NavItem {
   label: string;
   to: string;
   icon: ReactNode;
+  /** Shown at the end of the item, e.g. a count of things waiting. */
+  badge?: ReactNode;
 }
 
 export interface ShellUser {
@@ -38,11 +41,20 @@ export interface PortalShellProps {
   user: ShellUser;
   /** Extra user-menu entries above "Sign out" (e.g. a link to another portal). */
   menuItems?: ReactNode;
+  /** Extra header controls before the colour toggle (e.g. notifications). */
+  headerActions?: ReactNode;
   onSignOut: () => void;
 }
 
 /** The layout every portal shares: header with the user menu, navigation, and the page in `<Outlet />`. */
-export function PortalShell({ portalName, navItems, user, menuItems, onSignOut }: PortalShellProps) {
+export function PortalShell({
+  portalName,
+  navItems,
+  user,
+  menuItems,
+  headerActions,
+  onSignOut,
+}: PortalShellProps) {
   const [navOpened, { toggle: toggleNav, close: closeNav }] = useDisclosure(false);
   const { setColorScheme } = useMantineColorScheme();
   const colorScheme = useComputedColorScheme('light');
@@ -56,6 +68,9 @@ export function PortalShell({ portalName, navItems, user, menuItems, onSignOut }
       padding="lg"
     >
       <AppShell.Header>
+        <a href="#main" className={classes.skip}>
+          Skip to content
+        </a>
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
             <Burger opened={navOpened} onClick={toggleNav} hiddenFrom="sm" size="sm" aria-label="Menu" />
@@ -67,6 +82,7 @@ export function PortalShell({ portalName, navItems, user, menuItems, onSignOut }
             </Text>
           </Group>
           <Group gap="xs" wrap="nowrap">
+            {headerActions}
             <ActionIcon
               variant="subtle"
               color="gray"
@@ -120,6 +136,7 @@ export function PortalShell({ portalName, navItems, user, menuItems, onSignOut }
                 to={item.to}
                 label={item.label}
                 leftSection={item.icon}
+                rightSection={item.badge}
                 active={item.to === activeTo}
                 aria-current={item.to === activeTo ? 'page' : undefined}
                 onClick={closeNav}
@@ -129,7 +146,7 @@ export function PortalShell({ portalName, navItems, user, menuItems, onSignOut }
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Main>
+      <AppShell.Main id="main" tabIndex={-1} className={classes.main}>
         <Outlet />
       </AppShell.Main>
     </AppShell>

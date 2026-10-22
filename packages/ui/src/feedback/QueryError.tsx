@@ -17,3 +17,15 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
     </Alert>
   );
 }
+
+type Failable = { isError: boolean; error: unknown; refetch: () => unknown };
+
+/** One inline error for several queries (a form's option lists, say): the first failure, and a retry of every failed one. */
+export function QueriesError({ queries }: { queries: Failable[] }) {
+  const failed = queries.filter((query) => query.isError);
+  const [first] = failed;
+  if (!first) {
+    return null;
+  }
+  return <QueryError error={first.error} onRetry={() => failed.forEach((query) => void query.refetch())} />;
+}

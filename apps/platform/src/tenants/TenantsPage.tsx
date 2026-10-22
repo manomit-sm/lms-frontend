@@ -1,39 +1,45 @@
-import type { PlatformSchemas } from '@lms/api';
-import { PageHeader, QueryError } from '@lms/ui';
-import { Badge, Card, Group, Pagination, Skeleton, Table, Text, Tooltip } from '@mantine/core';
+import { formatDateTime, PageHeader, QueryError } from '@lms/ui';
+import {
+  Anchor,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Pagination,
+  Skeleton,
+  Table,
+  Text,
+  Tooltip,
+} from '@mantine/core';
+import { IconPlus } from '@tabler/icons-react';
+import { Link, useNavigate } from 'react-router';
 import { useState } from 'react';
 import { api } from '../runtime';
-
-type Tenant = PlatformSchemas['schemas']['TenantResponse'];
+import { CreateTenantModal } from './CreateTenantModal';
+import { label, MIGRATION_COLOR, STATUS_COLOR } from './tenantLabels';
 
 const PAGE_SIZE = 20;
 
-const STATUS_COLOR: Record<NonNullable<Tenant['status']>, string> = {
-  PROVISIONING: 'blue',
-  ACTIVE: 'teal',
-  SUSPENDED: 'orange',
-  DEACTIVATED: 'gray',
-};
-
-const MIGRATION_COLOR: Record<NonNullable<Tenant['migrationState']>, string> = {
-  PENDING: 'blue',
-  UP_TO_DATE: 'teal',
-  FAILED: 'red',
-};
-
-function label(value: string): string {
-  return value.charAt(0) + value.slice(1).toLowerCase().replaceAll('_', ' ');
-}
-
+/** Every organisation on the platform, newest first. */
 export function TenantsPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [creating, setCreating] = useState(false);
   const tenants = api.query.useQuery('get', '/platform/tenants', {
     params: { query: { page: page - 1, size: PAGE_SIZE } },
   });
 
   return (
     <>
-      <PageHeader title="Tenants" description="Every organisation on the platform, newest first." />
+      <PageHeader
+        title="Tenants"
+        description="Every organisation on the platform, newest first."
+        actions={
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setCreating(true)}>
+            Add tenant
+          </Button>
+        }
+      />
       {tenants.isError && <QueryError error={tenants.error} onRetry={() => void tenants.refetch()} />}
       {tenants.isPending && <Skeleton h={240} />}
       {tenants.data && (
@@ -51,9 +57,21 @@ export function TenantsPage() {
               </Table.Thead>
               <Table.Tbody>
                 {(tenants.data.content ?? []).map((tenant) => (
-                  <Table.Tr key={tenant.id}>
+                  <Table.Tr
+                    key={tenant.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate(`/tenants/${tenant.id}`)}
+                  >
                     <Table.Td>
-                      <Text fw={500}>{tenant.name}</Text>
+                      <Anchor
+                        component={Link}
+                        to={`/tenants/${tenant.id}`}
+                        fw={500}
+                        c="inherit"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {tenant.name}
+                      </Anchor>
                       <Text size="xs" c="dimmed">
                         {tenant.key}
                       </Text>
@@ -88,13 +106,7 @@ export function TenantsPage() {
                       <Text size="sm">{tenant.defaultTimezone}</Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">
-                        {tenant.createdAt &&
-                          new Date(tenant.createdAt).toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
-                      </Text>
+                      <Text size="sm">{formatDateTime(tenant.createdAt)}</Text>
                     </Table.Td>
                   </Table.Tr>
                 ))}
@@ -117,6 +129,7 @@ export function TenantsPage() {
           <Pagination value={page} onChange={setPage} total={tenants.data?.totalPages ?? 1} />
         </Group>
       )}
+      {creating && <CreateTenantModal onClose={() => setCreating(false)} />}
     </>
   );
 }

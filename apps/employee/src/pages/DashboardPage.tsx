@@ -85,6 +85,7 @@ function Stats({ summary }: { summary: Summary }) {
             label="Upcoming leave"
             value={me.upcomingLeave?.length ?? 0}
             detail="Requests ahead of you"
+            to="/calendar?scope=me"
           />
         </>
       )}
@@ -93,6 +94,7 @@ function Stats({ summary }: { summary: Summary }) {
           label="Approvals waiting"
           value={summary.approvals.pendingTasks ?? 0}
           detail="Assigned to you"
+          to="/approvals"
         />
       )}
       {team && (
@@ -100,6 +102,7 @@ function Stats({ summary }: { summary: Summary }) {
           label="Team on leave today"
           value={`${team.onLeaveToday ?? 0} of ${team.headcount ?? 0}`}
           detail={`${team.onLeaveNextSevenDays ?? 0} in the next 7 days`}
+          to="/calendar?scope=team"
         />
       )}
     </SimpleGrid>

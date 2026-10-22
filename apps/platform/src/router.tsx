@@ -2,7 +2,8 @@ import { LocalPlatformSignIn, RequireSession, SIGN_IN_PATH } from '@lms/auth';
 import { NotFoundPage, RouteErrorPage } from '@lms/ui';
 import { createBrowserRouter, Navigate } from 'react-router';
 import { PlatformShell } from './PlatformShell';
-import { TenantsPage } from './pages/TenantsPage';
+import { TenantPage } from './tenants/TenantPage';
+import { TenantsPage } from './tenants/TenantsPage';
 import { localAuthApi } from './runtime';
 
 export const router = createBrowserRouter([
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/tenants" replace /> },
           { path: 'tenants', element: <TenantsPage /> },
+          { path: 'tenants/:tenantId', element: <TenantPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

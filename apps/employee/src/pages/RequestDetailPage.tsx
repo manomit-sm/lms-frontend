@@ -1,156 +1,28 @@
 import { useCurrentUser } from '@lms/auth';
 import {
-  formatAmount,
   formatDateRange,
-  formatDateTime,
-  formatDay,
-  formatDays,
   LeaveStatusBadge,
   LeaveTypeLabel,
   PageHeader,
   QueryError,
-  SESSION_LABEL,
   showSuccess,
+  todayIso,
 } from '@lms/ui';
-import {
-  Anchor,
-  Badge,
-  Button,
-  Card,
-  Grid,
-  Group,
-  Modal,
-  SimpleGrid,
-  Skeleton,
-  Stack,
-  Table,
-  Text,
-  Textarea,
-  Timeline,
-  Title,
-} from '@mantine/core';
+import { Anchor, Button, Grid, Group, Modal, Skeleton, Stack, Text, Textarea } from '@mantine/core';
 import { modals } from '@mantine/modals';
-import { IconArrowLeft, IconCheck, IconClock, IconDownload, IconFile, IconX } from '@tabler/icons-react';
+import { IconArrowLeft } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router';
-import { resolveUploadUrl } from '../leave/attachments';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { refreshLeaveData } from '../leave/refresh';
-import { describeSessions } from '../leave/sessions';
-import type { ApprovalView, LeaveRequestDetail } from '../leave/types';
-import { api, config } from '../runtime';
-
-type Step = NonNullable<ApprovalView['steps']>[number];
-type HistoryEntry = NonNullable<LeaveRequestDetail['history']>[number];
-
-const STEP_STATUS: Record<NonNullable<Step['status']>, { label: string; color: string }> = {
-  WAITING: { label: 'Waiting', color: 'gray' },
-  PENDING: { label: 'Pending', color: 'yellow' },
-  APPROVED: { label: 'Approved', color: 'teal' },
-  REJECTED: { label: 'Rejected', color: 'red' },
-  SKIPPED: { label: 'Skipped', color: 'gray' },
-  CANCELLED: { label: 'Cancelled', color: 'gray' },
-};
-
-const ACTION_LABEL: Record<NonNullable<HistoryEntry['action']>, string> = {
-  SUBMIT: 'Requested',
-  APPROVE: 'Approved',
-  REJECT: 'Rejected',
-  WITHDRAW: 'Withdrawn',
-  CANCEL: 'Cancelled',
-  REQUEST_CANCELLATION: 'Cancellation requested',
-  APPROVE_CANCELLATION: 'Cancellation approved',
-  REJECT_CANCELLATION: 'Cancellation rejected',
-};
-
-/** Today in the browser's calendar, as the API writes dates. */
-function today(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <Stack gap={2}>
-      <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-        {label}
-      </Text>
-      <div>{children}</div>
-    </Stack>
-  );
-}
-
-function ApprovalProgress({ approval }: { approval: ApprovalView }) {
-  const steps = [...(approval.steps ?? [])].sort((a, b) => (a.stepOrder ?? 0) - (b.stepOrder ?? 0));
-  const reached = steps.filter((step) => step.status !== 'WAITING').length - 1;
-  return (
-    <Stack gap="sm">
-      <Group justify="space-between">
-        <Text fw={500}>
-          {approval.subjectType === 'LEAVE_CANCELLATION' ? 'Cancellation approval' : 'Approval'}
-        </Text>
-        <Text size="xs" c="dimmed">
-          {approval.workflowName}
-        </Text>
-      </Group>
-      {steps.length === 0 ? (
-        <Text size="sm" c="dimmed">
-          No approval was needed.
-        </Text>
-      ) : (
-        <Timeline active={reached} bulletSize={18} lineWidth={2}>
-          {steps.map((step) => {
-            const status = step.status ? STEP_STATUS[step.status] : undefined;
-            return (
-              <Timeline.Item
-                key={step.taskId ?? step.stepOrder}
-                color={status?.color}
-                bullet={
-                  step.status === 'APPROVED' ? (
-                    <IconCheck size={12} />
-                  ) : step.status === 'REJECTED' ? (
-                    <IconX size={12} />
-                  ) : step.status === 'PENDING' ? (
-                    <IconClock size={12} />
-                  ) : undefined
-                }
-                title={
-                  <Group gap="xs">
-                    <Text size="sm" fw={500}>
-                      {step.approverDescription}
-                    </Text>
-                    {status && (
-                      <Badge size="xs" variant="light" color={status.color}>
-                        {status.label}
-                      </Badge>
-                    )}
-                  </Group>
-                }
-              >
-                {step.actedBy ? (
-                  <Text size="xs" c="dimmed">
-                    {step.actedBy.name} · {formatDateTime(step.actedAt)}
-                  </Text>
-                ) : (
-                  (step.assignees?.length ?? 0) > 0 && (
-                    <Text size="xs" c="dimmed">
-                      {step.assignees?.map((assignee) => assignee.name).join(', ')}
-                    </Text>
-                  )
-                )}
-                {step.comment && (
-                  <Text size="sm" mt={4}>
-                    “{step.comment}”
-                  </Text>
-                )}
-              </Timeline.Item>
-            );
-          })}
-        </Timeline>
-      )}
-    </Stack>
-  );
-}
+import {
+  RequestApprovals,
+  RequestAttachments,
+  RequestDays,
+  RequestFacts,
+  RequestHistory,
+} from '../leave/RequestSections';
+import { api } from '../runtime';
 
 function CancelModal({
   opened,
@@ -219,20 +91,6 @@ export function RequestDetailPage() {
   const withdraw = api.query.useMutation('post', '/api/v1/leave-requests/{requestId}/withdraw');
   const cancel = api.query.useMutation('post', '/api/v1/leave-requests/{requestId}/cancel');
 
-  async function download(attachmentId: string) {
-    const { data } = await api.client.GET(
-      '/api/v1/leave-requests/{requestId}/attachments/{attachmentId}/download',
-      {
-        params: { path: { requestId, attachmentId } },
-      },
-    );
-    if (data?.url) {
-      // The URL answers with Content-Disposition: attachment, so the page stays and the file downloads.
-      // (A new window opened after the await would be stopped by popup blockers.)
-      window.location.assign(resolveUploadUrl(data.url, config.apiBaseUrl));
-    }
-  }
-
   function confirmWithdraw() {
     modals.openConfirmModal({
       title: <Text fw={600}>Withdraw this request?</Text>,
@@ -266,15 +124,11 @@ export function RequestDetailPage() {
 
   const detail = request.data;
   const mine = detail.employee?.id === me.employee?.id;
-  const started = (detail.startDate ?? '') <= today();
-  const sessions = describeSessions(detail.startDate, detail.endDate, detail.startSession, detail.endSession);
-  const approvals = [...(detail.approvals ?? [])].sort((a, b) =>
-    (a.createdAt ?? '').localeCompare(b.createdAt ?? ''),
-  );
+  const started = (detail.startDate ?? '') <= todayIso();
 
   return (
     <>
-      <BackLink />
+      <BackLink mine={mine} />
       <PageHeader
         title={formatDateRange(detail.startDate, detail.endDate)}
         description={
@@ -304,138 +158,15 @@ export function RequestDetailPage() {
       <Grid gap="lg">
         <Grid.Col span={{ base: 12, md: 7 }}>
           <Stack gap="lg">
-            <Card withBorder padding="lg">
-              <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="lg">
-                <Field label="Takes">
-                  <Text>{formatDays(detail.totalDays)}</Text>
-                  {sessions && (
-                    <Text size="xs" c="dimmed">
-                      {sessions}
-                    </Text>
-                  )}
-                </Field>
-                <Field label="Requested">
-                  <Text>{formatDateTime(detail.createdAt)}</Text>
-                </Field>
-                {!mine && (
-                  <Field label="Employee">
-                    <Text>{detail.employee?.name}</Text>
-                  </Field>
-                )}
-                {detail.decidedAt && (
-                  <Field label="Decided">
-                    <Text>{formatDateTime(detail.decidedAt)}</Text>
-                  </Field>
-                )}
-                <Field label="Reason">
-                  <Text c={detail.reason ? undefined : 'dimmed'} style={{ whiteSpace: 'pre-wrap' }}>
-                    {detail.reason || 'None given'}
-                  </Text>
-                </Field>
-                {detail.cancellationReason && (
-                  <Field label="Cancellation reason">
-                    <Text style={{ whiteSpace: 'pre-wrap' }}>{detail.cancellationReason}</Text>
-                  </Field>
-                )}
-              </SimpleGrid>
-            </Card>
-
-            <Card withBorder padding="lg">
-              <Title order={4} mb="sm">
-                Days
-              </Title>
-              <Table verticalSpacing={6} fz="sm">
-                <Table.Tbody>
-                  {(detail.days ?? []).map((day) => (
-                    <Table.Tr key={day.date}>
-                      <Table.Td pl={0}>{day.date && formatDay(day.date)}</Table.Td>
-                      <Table.Td>
-                        {day.dayType !== 'WORKING' ? (
-                          <Badge size="xs" variant="light" color="gray">
-                            {day.dayType === 'HOLIDAY' ? 'Holiday' : 'Weekend'}
-                          </Badge>
-                        ) : (
-                          day.session &&
-                          day.session !== 'FULL_DAY' && (
-                            <Badge size="xs" variant="light">
-                              {SESSION_LABEL[day.session]}
-                            </Badge>
-                          )
-                        )}
-                      </Table.Td>
-                      <Table.Td ta="right" pr={0}>
-                        {formatAmount(day.amount)}
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </Card>
-
-            {(detail.attachments?.length ?? 0) > 0 && (
-              <Card withBorder padding="lg">
-                <Title order={4} mb="sm">
-                  Attachments
-                </Title>
-                <Stack gap="xs">
-                  {detail.attachments?.map((attachment) => (
-                    <Group key={attachment.id} justify="space-between" wrap="nowrap">
-                      <Group gap="xs" wrap="nowrap" miw={0}>
-                        <IconFile size={18} />
-                        <Text size="sm" truncate>
-                          {attachment.fileName}
-                        </Text>
-                      </Group>
-                      <Button
-                        variant="subtle"
-                        size="compact-sm"
-                        leftSection={<IconDownload size={14} />}
-                        onClick={() => void download(attachment.id!)}
-                      >
-                        Download
-                      </Button>
-                    </Group>
-                  ))}
-                </Stack>
-              </Card>
-            )}
+            <RequestFacts detail={detail} showEmployee={!mine} />
+            <RequestDays detail={detail} />
+            <RequestAttachments detail={detail} />
           </Stack>
         </Grid.Col>
-
         <Grid.Col span={{ base: 12, md: 5 }}>
           <Stack gap="lg">
-            <Card withBorder padding="lg">
-              <Stack gap="lg">
-                {approvals.length === 0 ? (
-                  <Text size="sm" c="dimmed">
-                    No approval has started.
-                  </Text>
-                ) : (
-                  approvals.map((approval) => <ApprovalProgress key={approval.id} approval={approval} />)
-                )}
-              </Stack>
-            </Card>
-            <Card withBorder padding="lg">
-              <Title order={4} mb="sm">
-                History
-              </Title>
-              <Stack gap="sm">
-                {[...(detail.history ?? [])]
-                  .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
-                  .map((entry, index) => (
-                    <Stack key={`${entry.createdAt}-${index}`} gap={0}>
-                      <Text size="sm">
-                        {entry.action ? ACTION_LABEL[entry.action] : entry.toStatus}
-                        {entry.actorUserId && entry.actorUserId === me.userId ? ' by you' : ''}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {formatDateTime(entry.createdAt)}
-                      </Text>
-                      {entry.comment && <Text size="sm">“{entry.comment}”</Text>}
-                    </Stack>
-                  ))}
-              </Stack>
-            </Card>
+            <RequestApprovals detail={detail} />
+            <RequestHistory detail={detail} />
           </Stack>
         </Grid.Col>
       </Grid>
@@ -466,17 +197,36 @@ export function RequestDetailPage() {
   );
 }
 
-function BackLink() {
+/** Back to the requester's list, or wherever the viewer came from (team, calendar, notifications). */
+function BackLink({ mine = true }: { mine?: boolean }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const style = { alignItems: 'center', gap: 4 } as const;
+  if (mine || location.key === 'default') {
+    return (
+      <Anchor
+        component={Link}
+        to={mine ? '/leave' : '/'}
+        size="sm"
+        mb="sm"
+        display="inline-flex"
+        style={style}
+      >
+        <IconArrowLeft size={14} /> {mine ? 'My leave' : 'Dashboard'}
+      </Anchor>
+    );
+  }
   return (
     <Anchor
-      component={Link}
-      to="/leave"
+      component="button"
+      type="button"
+      onClick={() => navigate(-1)}
       size="sm"
       mb="sm"
       display="inline-flex"
-      style={{ alignItems: 'center', gap: 4 }}
+      style={style}
     >
-      <IconArrowLeft size={14} /> My leave
+      <IconArrowLeft size={14} /> Back
     </Anchor>
   );
 }
