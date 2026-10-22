@@ -56,8 +56,7 @@ describe('LocalTenantSignIn', () => {
     // The only tenant is chosen automatically, so its users are listed straight away
     expect(await screen.findByText('asha@acme.test')).toBeInTheDocument();
     expect(screen.getByText('First sign-in')).toBeInTheDocument();
-    const signInButtons = screen.getAllByRole('button', { name: 'Sign in' });
-    await userEvent.click(signInButtons[1]!);
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in as asha@acme.test' }));
 
     expect(await screen.findByText('Leave page')).toBeInTheDocument();
     expect(api.tenantToken).toHaveBeenCalledWith('sub-asha', 'tenant-1', 480);

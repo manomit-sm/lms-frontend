@@ -33,6 +33,23 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import('./pages/ProfilePage')).ProfilePage }),
           },
           {
+            path: 'notifications',
+            lazy: async () => ({
+              Component: (await import('./notifications/NotificationsPage')).NotificationsPage,
+            }),
+          },
+          // Approvers need not be employees (e.g. an HR role), so these sit outside the employee check
+          {
+            path: 'approvals',
+            lazy: async () => ({ Component: (await import('./approvals/ApprovalsPage')).ApprovalsPage }),
+          },
+          {
+            path: 'approvals/:requestId',
+            lazy: async () => ({
+              Component: (await import('./approvals/ReviewRequestPage')).ReviewRequestPage,
+            }),
+          },
+          {
             element: <RequireEmployeeOutlet />,
             children: [
               {
@@ -52,6 +69,18 @@ export const router = createBrowserRouter([
               {
                 path: 'balances',
                 lazy: async () => ({ Component: (await import('./pages/BalancesPage')).BalancesPage }),
+              },
+              {
+                path: 'calendar',
+                lazy: async () => ({ Component: (await import('./calendar/CalendarPage')).CalendarPage }),
+              },
+              {
+                path: 'team',
+                lazy: async () => ({ Component: (await import('./team/TeamPage')).TeamPage }),
+              },
+              {
+                path: 'team/:employeeId',
+                lazy: async () => ({ Component: (await import('./team/TeamMemberPage')).TeamMemberPage }),
               },
             ],
           },

@@ -18,9 +18,21 @@ the permissions in `/api/v1/auth/me`, never by role names.
 - **Employee**: dashboard (balances, upcoming leave, recent activity, team and approval counts), apply for
   leave with a live preview (days taken, balance after, every rule the request breaks), half days and
   attachments, my requests with filters, request detail with approval progress, withdraw and cancel,
-  balances with their transaction history.
-- **Admin**: shell and sign-in; the administration screens follow.
-- **Platform**: tenant list.
+  balances with their transaction history; a month calendar for oneself, the team or a department, with
+  who is available on any day; notifications, live in the header. Approvers get an inbox and a review
+  page (the request, the requester's balance, who else is away) to approve or reject leave and
+  cancellations; managers get their team, with each report's balances and requests.
+- **Admin**: employees (search, add, edit, reporting manager, exit); the organisation (departments as a
+  tree, designations, locations, work schedules); users (invite, roles, enable and disable) and roles
+  (system roles, and custom roles with a permission picker that only offers what the admin may grant);
+  leave setup (leave types, policies with who they apply to, leave periods); holidays (per location or
+  department, CSV import); approval workflows (rules, up to five approver steps, reminders, escalation,
+  automatic approval); balances (allocating a period, adjusting one employee's); settings; a dashboard
+  (headcount, who is away, waiting requests, leave taken this period, recent activity); reports (by
+  month, leave type, department, decisions, leave history, balances) over any range up to two years,
+  exported as CSV or Excel; the audit log. Each area appears only to holders of its permissions.
+- **Platform**: tenants (list, add with its first admin, suspend and activate, run migrations again,
+  add a tenant admin).
 
 ## Stack
 
@@ -85,7 +97,7 @@ admin signs in to the admin portal; employees added there appear in the sign-in 
 | `npm run format`       | Prettier (`format:check` only checks)                                           |
 | `npm run build`        | Production builds into `apps/*/dist` (needs the settings below)                 |
 | `npm run api:generate` | Refresh the OpenAPI snapshots from the running backend and regenerate the types |
-| `npm run seed:demo` | Create the demo tenant in the running backend (see above) |
+| `npm run seed:demo`    | Create the demo tenant in the running backend (see above)                       |
 
 ### API types
 
@@ -126,15 +138,30 @@ vite.shared.ts         # Vite config shared by the portals (dev proxy, required 
 ```
 
 Each app has `src/runtime.ts` (its settings, session store, API client and query cache),
-`src/router.tsx` and `src/main.tsx`; pages live in `src/pages` and load on first visit. The employee
-portal's leave logic (sessions, attachments, balance arithmetic, policy hints) is in `src/leave`.
+`src/router.tsx` and `src/main.tsx`; pages load on first visit. The employee portal's own pages are in
+`src/pages` and its leave logic (sessions, attachments, balance arithmetic, policy hints) in `src/leave`;
+`src/approvals`, `src/calendar`, `src/team` and `src/notifications` hold those features. The admin
+portal has a folder per area (`employees`, `organisation`, `access`, `leavesetup`, `holidays`,
+`workflows`, `balances`, `settings`, and `insight` for the dashboard, reports and audit log), and
+`navigation.ts` maps each area to the permissions that open it. The platform portal's pages are in
+`src/tenants`.
+
+### Live notifications
+
+The employee portal keeps `GET /api/v1/notifications/stream` (server-sent events) open while signed
+in. `EventSource` can't send the bearer header, and the API never takes tokens in the URL, so
+`runEventStream` in `@lms/api` reads the stream with `fetch`. It reconnects with backoff when the
+stream ends or fails, stops on sign-out, and ends the session on 401. Each new notification pops
+up, updates the unread count, and refetches what it is about (approvals, leave, balances).
 
 ### Attachments
 
 Files never pass through the API: the portal asks the API for a presigned upload URL
 (`POST /api/v1/leave-requests/attachments`), PUTs the file there, and sends the attachment id with the
 request. Downloads work the same way. Deployed, the URLs point at S3; with the backend's local profile
-they point at its in-memory stand-in (`/local/storage/**`), which the dev proxy forwards.
+they point at its in-memory stand-in (`/local/storage/**`), which the dev proxy forwards. Report
+exports are generated in the background: "Your exports" polls until a file is ready, and Download asks
+for a fresh link each time, because links expire.
 
 ### Errors
 

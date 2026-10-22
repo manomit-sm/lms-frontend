@@ -6,7 +6,10 @@ type ProblemDetail = components['schemas']['ProblemDetail'];
 export type ErrorCode = NonNullable<ProblemDetail['errorCode']> | 'NETWORK_ERROR' | 'UNEXPECTED_RESPONSE';
 
 export interface FieldError {
+  /** Empty when the problem is about a row of an imported file rather than a field. */
   field: string;
+  /** For imports: the file's row (1 is the header). */
+  row?: number;
   message: string;
 }
 
@@ -58,6 +61,7 @@ export class ApiError extends Error {
       detail: problem.detail ?? problem.title ?? problem.errorCode,
       fieldErrors: (problem.errors ?? []).map((error) => ({
         field: error.field ?? '',
+        row: error.row,
         message: error.message ?? '',
       })),
       violations: (problem.violations ?? []).map((violation) => ({
@@ -78,7 +82,9 @@ export class ApiError extends Error {
 
   /** Field errors keyed by field name, in the shape Mantine forms take (`form.setErrors`). */
   fieldErrorMap(): Record<string, string> {
-    return Object.fromEntries(this.fieldErrors.map((error) => [error.field, error.message]));
+    return Object.fromEntries(
+      this.fieldErrors.filter((error) => error.field).map((error) => [error.field, error.message]),
+    );
   }
 }
 

@@ -20,6 +20,18 @@ describe('ApiError.fromResponse', () => {
     expect(error.fieldErrorMap()).toEqual({ startDate: 'must not be null' });
   });
 
+  it('reads the rows of an invalid import, which have no field', async () => {
+    const error = await ApiError.fromResponse(
+      problem(422, {
+        errorCode: 'INVALID_HOLIDAY_IMPORT',
+        detail: '1 row(s) are invalid; nothing was imported',
+        errors: [{ row: 3, message: 'date must be yyyy-MM-dd' }],
+      }),
+    );
+    expect(error.fieldErrors).toEqual([{ field: '', row: 3, message: 'date must be yyyy-MM-dd' }]);
+    expect(error.fieldErrorMap()).toEqual({});
+  });
+
   it('reads every broken leave rule', async () => {
     const error = await ApiError.fromResponse(
       problem(422, {

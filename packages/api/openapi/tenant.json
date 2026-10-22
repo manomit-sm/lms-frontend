@@ -14249,12 +14249,17 @@
           },
           "errors": {
             "type": "array",
-            "description": "For VALIDATION_FAILED",
+            "description": "For VALIDATION_FAILED (by field) and invalid imports (by row)",
             "items": {
               "type": "object",
               "properties": {
                 "field": {
                   "type": "string"
+                },
+                "row": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "For imports: the file's row (1 is the header)"
                 },
                 "message": {
                   "type": "string"

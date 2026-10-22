@@ -1,8 +1,24 @@
-import { ADMIN_PERMISSIONS } from '@lms/api';
+import { ADMIN_PERMISSIONS, type Permission } from '@lms/api';
 import { useCurrentUser, useSession } from '@lms/auth';
 import { MessagePage, PortalShell, type NavItem } from '@lms/ui';
 import { Button, Menu } from '@mantine/core';
-import { IconExternalLink, IconHome, IconLock } from '@tabler/icons-react';
+import {
+  IconAdjustments,
+  IconBuilding,
+  IconChartBar,
+  IconHistory,
+  IconCalendarCog,
+  IconConfetti,
+  IconRoute,
+  IconScale,
+  IconExternalLink,
+  IconLayoutDashboard,
+  IconLock,
+  IconShieldLock,
+  IconUserCog,
+  IconUsers,
+} from '@tabler/icons-react';
+import { AREA_PERMISSIONS } from './navigation';
 import { config } from './runtime';
 
 /** The admin portal's layout; users without any admin permission are sent to the employee portal. */
@@ -31,7 +47,53 @@ export function AdminShell() {
     );
   }
 
-  const navItems: NavItem[] = [{ label: 'Home', to: '/', icon: <IconHome size={18} /> }];
+  const areas: (NavItem & { anyOf: readonly Permission[] })[] = [
+    {
+      label: 'Employees',
+      to: '/employees',
+      icon: <IconUsers size={18} />,
+      anyOf: AREA_PERMISSIONS.employees,
+    },
+    {
+      label: 'Organisation',
+      to: '/organisation',
+      icon: <IconBuilding size={18} />,
+      anyOf: AREA_PERMISSIONS.organisation,
+    },
+    { label: 'Users', to: '/users', icon: <IconUserCog size={18} />, anyOf: AREA_PERMISSIONS.users },
+    { label: 'Roles', to: '/roles', icon: <IconShieldLock size={18} />, anyOf: AREA_PERMISSIONS.roles },
+    {
+      label: 'Leave setup',
+      to: '/leave-setup',
+      icon: <IconCalendarCog size={18} />,
+      anyOf: AREA_PERMISSIONS.leaveSetup,
+    },
+    {
+      label: 'Holidays',
+      to: '/holidays',
+      icon: <IconConfetti size={18} />,
+      anyOf: AREA_PERMISSIONS.holidays,
+    },
+    {
+      label: 'Approval workflows',
+      to: '/workflows',
+      icon: <IconRoute size={18} />,
+      anyOf: AREA_PERMISSIONS.workflows,
+    },
+    { label: 'Balances', to: '/balances', icon: <IconScale size={18} />, anyOf: AREA_PERMISSIONS.balances },
+    { label: 'Reports', to: '/reports', icon: <IconChartBar size={18} />, anyOf: AREA_PERMISSIONS.reports },
+    { label: 'Audit log', to: '/audit', icon: <IconHistory size={18} />, anyOf: AREA_PERMISSIONS.audit },
+    {
+      label: 'Settings',
+      to: '/settings',
+      icon: <IconAdjustments size={18} />,
+      anyOf: AREA_PERMISSIONS.settings,
+    },
+  ];
+  const navItems: NavItem[] = [
+    { label: 'Dashboard', to: '/', icon: <IconLayoutDashboard size={18} /> },
+    ...areas.filter((area) => user.canAny(area.anyOf)).map(({ anyOf: _, ...item }) => item),
+  ];
 
   return (
     <PortalShell

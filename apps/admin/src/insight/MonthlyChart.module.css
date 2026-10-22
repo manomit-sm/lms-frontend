@@ -1,0 +1,53 @@
+.chart {
+  display: grid;
+  padding-top: 18px;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  gap: 2px;
+  align-items: end;
+  height: 180px;
+  /* Recessive gridlines at a quarter, half and three quarters */
+  background-image: linear-gradient(to top, var(--mantine-color-default-border) 1px, transparent 1px);
+  background-size: 100% 25%;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+/* The whole column is the hover target, not just the (possibly tiny) bar */
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  cursor: default;
+}
+
+.column:hover .bar,
+.column:focus-visible .bar {
+  filter: brightness(1.15);
+}
+
+.column:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.bar {
+  width: min(100%, 28px);
+  min-height: 0;
+  background: var(--mantine-primary-color-filled);
+  border-radius: 4px 4px 0 0;
+}
+
+.labels {
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  gap: 2px;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.peak {
+  margin-bottom: 2px;
+  line-height: 1;
+}

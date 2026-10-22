@@ -52,7 +52,9 @@ async function awaitUsers(tenantId, emails) {
   throw new Error(`Users were not invited in time: ${emails.join(', ')}`);
 }
 
-const platform = await call('POST', '/local/tokens/platform', { body: { subject: 'seed-demo', ttlMinutes: 10 } });
+const platform = await call('POST', '/local/tokens/platform', {
+  body: { subject: 'seed-demo', ttlMinutes: 10 },
+});
 let tenant;
 try {
   tenant = await call('POST', '/platform/tenants', {

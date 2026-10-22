@@ -7,3 +7,5 @@ export type { LocalAuthApi, LocalTenant, LocalToken, LocalUser } from './local';
 export { Permission, ADMIN_PERMISSIONS } from './permissions';
 export type { components as TenantSchemas } from './generated/tenant';
 export type { components as PlatformSchemas } from './generated/platform';
+export { EventStreamParser, runEventStream } from './eventStream';
+export type { EventStreamOptions, ServerEvent } from './eventStream';

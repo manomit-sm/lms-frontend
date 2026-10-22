@@ -57,3 +57,37 @@ export function formatAmount(days: number | null | undefined): string {
 export function formatInstantDate(isoDateTime: string | null | undefined): string {
   return isoDateTime ? new Date(isoDateTime).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '';
 }
+
+/** Today in the browser's calendar, as the API writes dates (`2026-10-21`). */
+export function todayIso(): string {
+  return isoDate(new Date());
+}
+
+/** A local date as the API writes dates. */
+export function isoDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['year', 365 * 24 * 60 * 60],
+  ['month', 30 * 24 * 60 * 60],
+  ['week', 7 * 24 * 60 * 60],
+  ['day', 24 * 60 * 60],
+  ['hour', 60 * 60],
+  ['minute', 60],
+];
+
+/** "5 minutes ago", "yesterday", "just now": when something happened, for feeds. */
+export function formatRelativeTime(isoDateTime: string | null | undefined, now: Date = new Date()): string {
+  if (!isoDateTime) {
+    return '';
+  }
+  const seconds = Math.round((new Date(isoDateTime).getTime() - now.getTime()) / 1000);
+  const format = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+  for (const [unit, size] of RELATIVE_UNITS) {
+    if (Math.abs(seconds) >= size) {
+      return format.format(Math.trunc(seconds / size), unit);
+    }
+  }
+  return 'just now';
+}
